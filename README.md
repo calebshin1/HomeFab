@@ -1,0 +1,1 @@
+All of the firmware I'm using for my at-home semiconductor fabrication lab. An ultra-budget spin-off of the HackerFab, I'm building out a small wet fab at home with the ultimate goal of creating a simple PMOS logic gate with transistors.
