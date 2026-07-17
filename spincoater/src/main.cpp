@@ -13,6 +13,9 @@
 #define MINUS 18
 #define PLUS 19
 
+#define LED_PIN 2
+bool ledState = LOW;
+
 Bounce2::Button ok = Bounce2::Button();
 Bounce2::Button cancel = Bounce2::Button();
 Bounce2::Button plus = Bounce2::Button();
@@ -39,7 +42,6 @@ void setup() {
   minus.attach(MINUS, INPUT_PULLUP);
   minus.interval(5);
   minus.setPressedState(LOW);
-  
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
@@ -51,17 +53,61 @@ void setup() {
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);
-  display.println("-----Spincoater-----");
-  display.println("");
-  display.println("STATUS: [Idle]");
-  display.println("TIME: [0:00]");
-  display.println("SPEED: [500RPM]");
-  display.println("");
-  display.println("[CANCEL] [-] [+] [OK]");
+  // display.println("-----Spincoater-----");
+  // display.println("");
+  // display.println("STATUS: [Idle]");
+  // display.println("TIME: [0:00]");
+  // display.println("SPEED: [500RPM]");
+  // display.println("");
+  // display.println("[CANCEL] [-] [+] [OK]");
+  display.println("Button Testing:");
   
   display.display();
 }
 
 void loop() {
-  // nothing needed here
+  ok.update();
+  cancel.update();
+  plus.update();
+  minus.update();
+
+  if (ok.pressed()) {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("Button Testing:");
+    display.println("OK/B4");
+    display.display();
+  }
+
+  else if (cancel.pressed()) {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("Button Testing:");
+    display.println("CANCEL/B1");
+    display.display();
+  }
+
+  else if (plus.pressed()) {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("Button Testing:");
+    display.println("PLUS/B3");
+    display.display();
+  }
+
+  else if (minus.pressed()) {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("Button Testing:");
+    display.println("MINUS/B2");
+    display.display();
+  }
 }
