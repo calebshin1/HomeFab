@@ -41,6 +41,7 @@ unsigned long timeLastLED = 0; //value that tracks time between LED toggles
 const unsigned long blinkDuration = 500; //ms
 
 uint8_t state = 0; //default state is 0 which is idle
+uint8_t timer = 0; //set and elapsed time, in seconds
 
 Bounce2::Button ok = Bounce2::Button(); //setting up Bounce2 button objects
 Bounce2::Button cancel = Bounce2::Button();
