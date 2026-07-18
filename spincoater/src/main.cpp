@@ -8,28 +8,41 @@
 #define OLED_RESET    -1   // my ssd1306 has no reset pin
 #define SCREEN_ADDRESS 0x3C 
 
+//PTS645 GPIO pins used on ESP32
 #define OK 4
 #define CANCEL 5
 #define MINUS 18
 #define PLUS 19
 
+//5TB4URGB GPIO pins used on ESP32
 #define RED 25
 #define GREEN 26
 #define BLUE 27
 
+//LED PWM params
 const int freq = 5000;
 const int res = 8;
-
 const int redChl = 0;
 const int greenChl = 1;
 const int blueChl = 2;
+uint8_t red = 0;
+uint8_t green = 0;
+uint8_t blue = 0;
 
-uint8_t state = 0;
+//LED color arrays (for easier organization)
+const int whiteCode[3] = {60,60,60};
+const int blueCode[3] = {0,0,90};
+const int yellowCode[3] = {20,5,0};
+const int offCode[3] = {0,0,0};
 
-#define LED_PIN 2
-bool ledState = LOW;
+bool blink {}; //boolean for if blink mode or not
+bool ledState {}; //for if led is on or not
+unsigned long timeLastLED = 0; //value that tracks time between LED toggles
+const unsigned long blinkDuration = 500; //ms
 
-Bounce2::Button ok = Bounce2::Button();
+uint8_t state = 0; //default state is 0 which is idle
+
+Bounce2::Button ok = Bounce2::Button(); //setting up Bounce2 button objects
 Bounce2::Button cancel = Bounce2::Button();
 Bounce2::Button plus = Bounce2::Button();
 Bounce2::Button minus = Bounce2::Button();
@@ -87,6 +100,25 @@ void setup() {
   ledcAttachPin(BLUE, blueChl);
 }
 
+void setLED(const int* arr, bool blinkBool){ //if false, solid. if true, blink
+  blink = blinkBool;
+  red = arr[0];
+  green = arr[1];
+  blue = arr[2];
+  if (blink == false){
+    ledcWrite(redChl, red);
+    ledcWrite(greenChl, green);  
+    ledcWrite(blueChl, blue);
+  }
+  else if (blink == true){
+    ledState = true;
+    timeLastLED = millis(); //count
+    ledcWrite(redChl, red); //initialize blink, turn on
+    ledcWrite(greenChl, green);  
+    ledcWrite(blueChl, blue);
+  }
+}
+
 void updateCurrentState() {
   //state 0 = idle
   //state 1 = speed select
@@ -98,6 +130,9 @@ void updateCurrentState() {
   minus.update();
 
   if (state == 0) {
+    //LED set to white
+    setLED(whiteCode, false);
+    //prepare/prompt for OK press
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
@@ -114,6 +149,7 @@ void updateCurrentState() {
     display.display();
     if (ok.pressed()){
       state = 1;
+      setLED(blueCode, true);
     }
   }
   else if (state == 1){
@@ -134,9 +170,27 @@ void updateCurrentState() {
   }
 }
 
+void blinkToggler(){ //code for blink based on millis()
+  if (blink == false){
+    return;
+  }
+  if ((millis() - timeLastLED) >= blinkDuration){
+    timeLastLED = millis();
+    ledState = !ledState;
+    if (ledState){
+      ledcWrite(redChl, red);  
+      ledcWrite(greenChl, green);  
+      ledcWrite(blueChl, blue);
+    }
+    else{
+      ledcWrite(redChl, 0);
+      ledcWrite(greenChl, 0);
+      ledcWrite(blueChl, 0);
+    }
+  }
+}
+
 void loop() {
   updateCurrentState();
-  ledcWrite(redChl, 255);
-  ledcWrite(greenChl, 255);
-  ledcWrite(blueChl, 255);
+  blinkToggler();
 }
