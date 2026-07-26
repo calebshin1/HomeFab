@@ -33,6 +33,7 @@ uint8_t blue = 0;
 const int whiteCode[3] = {60,60,60};
 const int blueCode[3] = {0,0,90};
 const int yellowCode[3] = {20,5,0};
+const int greenCode[3] = {0,60,0};
 const int offCode[3] = {0,0,0};
 
 bool blink {}; //boolean for if blink mode or not
@@ -160,13 +161,52 @@ void updateCurrentState() {
     display.setCursor(0, 0);
     display.println("-----Spincoater-----");
     display.println("");
-    display.println("STATUS: [Idle]");
+    display.println("STATUS: [Timeset]");
     display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
     display.println("TIME: [0:00]");
     display.setTextColor(SSD1306_WHITE);
     display.println("SPEED: [500RPM]");
     display.println("");
     display.print("[CANCEL] [-] [+] [OK]");
+    display.display();
+    if (ok.pressed()){
+      state = 2;
+      setLED(yellowCode, true);
+    }
+  }
+  else if (state = 2){
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("-----Spincoater-----");
+    display.println("");
+    display.println("STATUS: [RPMset]");
+    display.println("TIME: [0:00]");
+    display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+    display.println("SPEED: [500RPM]");
+    display.setTextColor(SSD1306_WHITE);
+    display.println("");
+    display.print("[CANCEL] [-] [+] [OK]");
+    display.display();
+    if (ok.pressed()){
+      state = 3;
+      setLED(greenCode, true);
+    }
+  }
+  else if (state = 3){
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("-----Spincoater-----");
+    display.println("");
+    display.println("STATUS: [RUN]");
+    display.println("TIME: [x:xx]");
+    display.println("SPEED: [xxxRPM]");
+    display.println("");
+    display.print("[CANCEL] [-] [+] ");
+    display.print("[OK]");
     display.display();
   }
 }
