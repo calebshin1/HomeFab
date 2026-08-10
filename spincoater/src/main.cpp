@@ -2,22 +2,26 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Bounce2.h>
+#include <ESP32Servo.h>
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64   
-#define OLED_RESET    -1   // my ssd1306 has no reset pin
+#define OLED_RESET    -1   // ssd1306 has no reset pin
 #define SCREEN_ADDRESS 0x3C 
 
-//PTS645 GPIO pins used on ESP32
+//box button (PTS645) GPIO pins used on ESP32
 #define OK 4
 #define CANCEL 5
 #define MINUS 18
 #define PLUS 19
 
-//5TB4URGB GPIO pins used on ESP32
+//RGB LED (5TB4URGB) GPIO pins used on ESP32
 #define RED 25
 #define GREEN 26
 #define BLUE 27
+
+//ESC sig pin
+#define ESC_PIN 21
 
 //LED PWM params
 const int freq = 5000;
@@ -174,7 +178,7 @@ void updateCurrentState() {
       setLED(yellowCode, true);
     }
   }
-  else if (state = 2){
+  else if (state == 2){
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
@@ -194,7 +198,7 @@ void updateCurrentState() {
       setLED(greenCode, true);
     }
   }
-  else if (state = 3){
+  else if (state == 3){
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
