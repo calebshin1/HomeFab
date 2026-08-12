@@ -20,8 +20,22 @@
 #define GREEN 26
 #define BLUE 27
 
-//ESC sig pin
-#define ESC_PIN 21
+//ESC sig pin and other relevant params
+#define ESC_PIN 14
+const int TEST_US = 1300; //from older RS2205 test harness
+Servo esc;
+struct spinParams{
+  int targetRPM = 500;
+  int duration = 10; //seconds
+  unsigned long elasped = 0; //elapsed spin time
+  int throttleUs = 1000; //throttle microseconds
+};
+spinParams motor;
+
+enum spinPhase {ARM_WAIT, ARM_SEND, RUNNING};
+spinPhase escPhase = ARM_WAIT;
+unsigned long armStartUs = 0;
+const unsigned long ARM_DELAY = 3000; 
 
 //LED PWM params
 const int freq = 5000;
@@ -53,6 +67,8 @@ Bounce2::Button cancel = Bounce2::Button();
 Bounce2::Button plus = Bounce2::Button();
 Bounce2::Button minus = Bounce2::Button();
 
+
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 void setup() {
@@ -80,30 +96,18 @@ void setup() {
     while (true) delay(10); // halt
   }
 
-  //sample OLED layout testing
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);
-  // display.println("-----Spincoater-----");
-  // display.println("");
-  // display.println("STATUS: [Idle]");
-  // display.println("TIME: [0:00]");
-  // display.println("SPEED: [500RPM]");
-  // display.println("");
-  // display.println("[CANCEL] [-] [+] [OK]");
-  display.println("Button Testing:");
-  
-  display.display();
-
   ledcSetup(redChl, freq, res);
   ledcSetup(greenChl, freq, res);
   ledcSetup(blueChl, freq, res);
   
-  // Attach the channels to the GPIO pins
+  // matching LED pinout to GPIO
   ledcAttachPin(RED, redChl);
   ledcAttachPin(GREEN, greenChl);
   ledcAttachPin(BLUE, blueChl);
+  //ESC to GPIO
+  esc.setPeriodHertz(50);
+  esc.attach(ESC_PIN, 1000, 2000);
+  esc.writeMicroseconds(1000);
 }
 
 void setLED(const int* arr, bool blinkBool){ //if false, solid. if true, blink
