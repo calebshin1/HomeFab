@@ -27,7 +27,7 @@ Servo esc;
 struct spinParams{
   int targetRPM = 500;
   int duration = 10; //seconds
-  unsigned long elasped = 0; //elapsed spin time
+  unsigned long elapsed = 0; //elapsed spin time
   int throttleUs = 1000; //throttle microseconds
 };
 spinParams motor;
@@ -110,6 +110,35 @@ void setup() {
   esc.writeMicroseconds(1000);
 }
 
+void startSpin(){ //start spin
+  motor.throttleUs = 1000;
+  motor.elapsed = 0;
+  escPhase = ARM_WAIT;
+}
+void stopSpin(){ //stop spin
+  esc.writeMicroseconds(1000);
+  escPhase = ARM_WAIT;
+}
+void updateSpin(){
+  if (escPhase == ARM_WAIT){ //if waiting, write low throttle, start timer, and send arm
+    esc.writeMicroseconds(1000);
+    armStartUs = millis();
+    escPhase = ARM_SEND;
+  }
+  else if (escPhase == ARM_SEND){ //if arm sending, and enough time has passed since send arm, run
+    if (millis() - armStartUs >= ARM_DELAY){
+      escPhase = RUNNING;
+    }
+  }
+  else if (escPhase == RUNNING){
+    esc.writeMicroseconds(TEST_US); //write speed (1300us)
+    motor.elapsed = (millis() - armStartUs - ARM_DELAY)/1000; //elapsed time calc
+    if (motor.elapsed >= (unsigned long)motor.duration){ //if set duration reached, stop spin
+      stopSpin();
+      state = 0;
+    }
+  }
+}
 void setLED(const int* arr, bool blinkBool){ //if false, solid. if true, blink
   blink = blinkBool;
   red = arr[0];
