@@ -2,22 +2,40 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Bounce2.h>
+#include <ESP32Servo.h>
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64   
-#define OLED_RESET    -1   // my ssd1306 has no reset pin
+#define OLED_RESET    -1   // ssd1306 has no reset pin
 #define SCREEN_ADDRESS 0x3C 
 
-//PTS645 GPIO pins used on ESP32
+//box button (PTS645) GPIO pins used on ESP32
 #define OK 4
 #define CANCEL 5
 #define MINUS 18
 #define PLUS 19
 
-//5TB4URGB GPIO pins used on ESP32
+//RGB LED (5TB4URGB) GPIO pins used on ESP32
 #define RED 25
 #define GREEN 26
 #define BLUE 27
+
+//ESC sig pin and other relevant params
+#define ESC_PIN 14
+const int TEST_US = 1300; //from older RS2205 test harness
+Servo esc;
+struct spinParams{
+  int targetRPM = 500;
+  int duration = 10; //seconds
+  unsigned long elapsed = 0; //elapsed spin time
+  int throttleUs = 1000; //throttle microseconds
+};
+spinParams motor;
+
+enum spinPhase {ARM_WAIT, ARM_SEND, RUNNING};
+spinPhase escPhase = ARM_WAIT;
+unsigned long armStartUs = 0;
+const unsigned long ARM_DELAY = 3000; 
 
 //LED PWM params
 const int freq = 5000;
@@ -49,6 +67,8 @@ Bounce2::Button cancel = Bounce2::Button();
 Bounce2::Button plus = Bounce2::Button();
 Bounce2::Button minus = Bounce2::Button();
 
+
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 void setup() {
@@ -76,32 +96,49 @@ void setup() {
     while (true) delay(10); // halt
   }
 
-  //sample OLED layout testing
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);
-  // display.println("-----Spincoater-----");
-  // display.println("");
-  // display.println("STATUS: [Idle]");
-  // display.println("TIME: [0:00]");
-  // display.println("SPEED: [500RPM]");
-  // display.println("");
-  // display.println("[CANCEL] [-] [+] [OK]");
-  display.println("Button Testing:");
-  
-  display.display();
-
   ledcSetup(redChl, freq, res);
   ledcSetup(greenChl, freq, res);
   ledcSetup(blueChl, freq, res);
   
-  // Attach the channels to the GPIO pins
+  // matching LED pinout to GPIO
   ledcAttachPin(RED, redChl);
   ledcAttachPin(GREEN, greenChl);
   ledcAttachPin(BLUE, blueChl);
+  //ESC to GPIO
+  esc.setPeriodHertz(50);
+  esc.attach(ESC_PIN, 1000, 2000);
+  esc.writeMicroseconds(1000);
 }
 
+void startSpin(){ //start spin
+  motor.throttleUs = 1000;
+  motor.elapsed = 0;
+  escPhase = ARM_WAIT;
+}
+void stopSpin(){ //stop spin
+  esc.writeMicroseconds(1000);
+  escPhase = ARM_WAIT;
+}
+void updateSpin(){
+  if (escPhase == ARM_WAIT){ //if waiting, write low throttle, start timer, and send arm
+    esc.writeMicroseconds(1000);
+    armStartUs = millis();
+    escPhase = ARM_SEND;
+  }
+  else if (escPhase == ARM_SEND){ //if arm sending, and enough time has passed since send arm, run
+    if (millis() - armStartUs >= ARM_DELAY){
+      escPhase = RUNNING;
+    }
+  }
+  else if (escPhase == RUNNING){
+    esc.writeMicroseconds(TEST_US); //write speed (1300us)
+    motor.elapsed = (millis() - armStartUs - ARM_DELAY)/1000; //elapsed time calc
+    if (motor.elapsed >= (unsigned long)motor.duration){ //if set duration reached, stop spin
+      stopSpin();
+      state = 0;
+    }
+  }
+}
 void setLED(const int* arr, bool blinkBool){ //if false, solid. if true, blink
   blink = blinkBool;
   red = arr[0];
@@ -174,7 +211,7 @@ void updateCurrentState() {
       setLED(yellowCode, true);
     }
   }
-  else if (state = 2){
+  else if (state == 2){
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
@@ -194,7 +231,7 @@ void updateCurrentState() {
       setLED(greenCode, true);
     }
   }
-  else if (state = 3){
+  else if (state == 3){
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
